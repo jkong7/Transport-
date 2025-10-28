@@ -61,6 +61,7 @@ class wildcat_receiver(threading.Thread):
         if seq_num == self.receiver_window_start:
             while self.receiver_window_start in self.receiver_window:
                 self.my_logger.commit(self.receiver_window[self.receiver_window_start])
+                del self.receiver_window[self.receiver_window_start]
                 self.receiver_window_start = (self.receiver_window_start + 1) % self.wrap_around
 
         
