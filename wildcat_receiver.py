@@ -9,10 +9,13 @@ class wildcat_receiver(threading.Thread):
         self.my_tunnel = my_tunnel
         self.my_logger = my_logger
         self.die = False
-        # add as needed
+        self.buffer = [] * window_size # buffer to hold out-of-order packets
+        self.next_expected_seq_num = 0
 
     def receive(self, packet_byte_array):
         # TODO: your implementation comes here
+        seq_num = int.from_bytes(packet_byte_array[0:2], byteorder='big')
+        
         pass
 
     def run(self):
