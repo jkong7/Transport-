@@ -34,7 +34,7 @@ class wildcat_sender(threading.Thread):
         checksum_received = struct.unpack("!H", ack_packet[-2:])[0]
         checksum_recomputed = zlib.crc32(ack_packet[:-2]) & 0xffff
         if checksum_received != checksum_recomputed:
-            return None, None, None
+            return None, None
 
         bitmap = ack_packet[2:-2]
         bits =[]
@@ -76,7 +76,6 @@ class wildcat_sender(threading.Thread):
     
     def run(self):
         while not self.die:
-            cur_time = time.time()
             while True: 
                 with self.lock: # Acquire lock as global variables are accessed
                     # If the window isn't full and there are packets to send, we continuously send
@@ -84,20 +83,23 @@ class wildcat_sender(threading.Thread):
                         # Pull from queue, build msg, send it, and add to window for bookkeeping
                         packet = self.packet_queue.get()
                         msg = self.build_msg(packet, self.next_seq_num)
-                        self.my_tunnel.magic_send(msg)
-                        self.sender_window.append( (self.next_seq_num, packet, cur_time) )
+                        self.my_tunnel.magic_send(bytearray(msg))
+                        self.sender_window.append( (self.next_seq_num, packet, time.time()) )
                         self.next_seq_num = (self.next_seq_num + 1) % self.wrap_around
                     else: 
                         break # Otherwise, break out of sending loop and move on to checking timeouts
 
             with self.lock:
+                cur_time = time.time()
                 for i in range(len(self.sender_window)):
                     # Any timeouts, resend and update timestamp in window
                     seq_num, packet, timestamp = self.sender_window[i]
                     if cur_time - timestamp > self.timeout_interval:
                         msg = self.build_msg(packet, seq_num)
-                        self.my_tunnel.magic_send(msg)
+                        self.my_tunnel.magic_send(bytearray(msg))
                         self.sender_window[i] = (seq_num, packet, cur_time) 
+            
+            time.sleep(0.005) # Sleep to allow progress elsewhere, or else this will hog CPU
 
     
     def join(self):

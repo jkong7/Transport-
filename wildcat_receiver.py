@@ -54,15 +54,14 @@ class wildcat_receiver(threading.Thread):
         
         # Build and send ack, also log payload 
         ack = self.build_ack(self.receiver_window_start, bitmap)
-        self.my_tunnel.magic_send(ack)
+        self.my_tunnel.magic_send(bytearray(ack))
 
         # Update window start and commit in-order packets to logger (out of order packet buffered in window
         # but won't be committed to log until in-order, i.e. no gaps)
-        if seq_num == self.receiver_window_start:
-            while self.receiver_window_start in self.receiver_window:
-                self.my_logger.commit(self.receiver_window[self.receiver_window_start])
-                del self.receiver_window[self.receiver_window_start]
-                self.receiver_window_start = (self.receiver_window_start + 1) % self.wrap_around
+        while self.receiver_window_start in self.receiver_window:
+            self.my_logger.commit(self.receiver_window[self.receiver_window_start])
+            del self.receiver_window[self.receiver_window_start]
+            self.receiver_window_start = (self.receiver_window_start + 1) % self.wrap_around
 
         
 
