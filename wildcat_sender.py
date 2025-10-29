@@ -22,6 +22,7 @@ class wildcat_sender(threading.Thread):
         self.wrap_around = 65536 # seq num wrap around value
         self.lock = threading.Lock() # lock for global variables
 
+    # Build sender message of the form [2 bytes seq_num][N bytes payload][2 bytes checksum]
     def build_msg(self, payload, seq_num):
         seq_num = seq_num % 65536
         first_two = struct.pack("!H", seq_num)
@@ -29,6 +30,7 @@ class wildcat_sender(threading.Thread):
         last_two = struct.pack("!H", checksum)
         return first_two + payload + last_two
 
+    # Parse ack packet, bitmap will be returned as list of bits
     def parse_ack(self, ack_packet):
         receiver_window_start = struct.unpack("!H", ack_packet[:2])[0]
         checksum_received = struct.unpack("!H", ack_packet[-2:])[0]
@@ -88,7 +90,8 @@ class wildcat_sender(threading.Thread):
                         self.next_seq_num = (self.next_seq_num + 1) % self.wrap_around
                     else: 
                         break # Otherwise, break out of sending loop and move on to checking timeouts
-
+            
+            # Check for timeouts and resend packets/update timestamps
             with self.lock:
                 cur_time = time.time()
                 for i in range(len(self.sender_window)):

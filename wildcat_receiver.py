@@ -16,6 +16,8 @@ class wildcat_receiver(threading.Thread):
         self.receiver_window = {} # seq_num: payload
         self.wrap_around = 65536
     
+    # Parse sender message of the form [2 bytes seq_num][N bytes payload][2 bytes checksum]
+    # Recompute checksum and see if it matches
     def parse_sender_msg(self, packet_byte_array):
         seq_num = struct.unpack("!H", packet_byte_array[:2])[0]
         checksum_received = struct.unpack("!H", packet_byte_array[-2:])[0]
@@ -25,6 +27,7 @@ class wildcat_receiver(threading.Thread):
         payload = packet_byte_array[2:-2]
         return seq_num, payload
 
+    # Build ack packet of the form [2 bytes window_start][N bytes bitmap][2 bytes checksum]
     def build_ack(self, window_start, bitmap):
         first_two = struct.pack("!H", window_start)
         bitmap_bytes = bytearray()
@@ -66,8 +69,8 @@ class wildcat_receiver(threading.Thread):
         
 
     def run(self):
+        # Don't need to do anything here, receive function is called by UDP receiver
         while not self.die:
-            # TODO: your implementation comes here
             pass
             
     def join(self):
